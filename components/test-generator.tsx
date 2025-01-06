@@ -317,7 +317,7 @@ export default function TestGenerator() {
     // Height for answers
     const answersHeight = await question.answers.reduce(async (heightPromise: Promise<number>, answer: { text: string; code?: string; equation?: string }) => {
       const height = await heightPromise;
-      const answerLines = getWrappedText(answer.text, contentWidth - 60);
+      const answerLines = getWrappedText(answer.text, contentWidth / 2 - 60);
       let answerHeight = answerLines.length * lineHeight;
       if (answer.code) {
     const codeLines = answer.code.split('\n').length;
@@ -380,44 +380,54 @@ export default function TestGenerator() {
     
     // Answers
     y += 8;
-    for (const [aIndex, answer] of question.answers.entries()) {
-      const answerLetter = `${String.fromCharCode(65 + aIndex)}.`;
-      doc.setFont("helvetica", "bold");
-      doc.text(answerLetter, margin + 20, y);
-      doc.setFont("helvetica", "normal");
-      y = addWrappedText(answer.text, margin + 40, y, contentWidth - 60);
-      
-      if (answer.code) {
-    y += 8;
-    y = addCodeBlock(answer.code, margin + 40, y, contentWidth - 60);
-      }
-      
-      if (answer.equation) {
-    y += 8;
-    try {
-      const equationData = await renderLatexToImage(answer.equation);
-      if (equationData.dataUrl) {
-        // Scale down if wider than available answer width
-        let imgWidth = equationData.width;
-        let imgHeight = equationData.height;
-        const maxWidth = contentWidth - 60; // Account for answer indentation
-        
-        if (imgWidth > maxWidth) {
-      const scale = maxWidth / imgWidth;
-      imgWidth = maxWidth;
-      imgHeight = equationData.height * scale;
-        }
-        
-        doc.addImage(equationData.dataUrl, 'PNG', margin + 50, y, imgWidth, imgHeight);
-        y += imgHeight + 16;
-      }
-    } catch (error) {
-      console.error('Error rendering answer equation:', error);
-      y = addWrappedText(answer.equation, margin + 50, y, contentWidth - 80);
-      y += 16;
-    }
-      }
+    const answerColumns: { text: string; code?: string; equation?: string }[][] = [[], []];
+    question.answers.forEach((answer, aIndex) => {
+      answerColumns[aIndex % 2].push(answer);
+    });
+
+    const maxAnswers = Math.max(answerColumns[0].length, answerColumns[1].length);
+    for (let i = 0; i < maxAnswers; i++) {
+      for (let col = 0; col < 2; col++) {
+        const answer = answerColumns[col][i];
+        if (answer) {
+          const answerLetter = `${String.fromCharCode(65 + (i * 2) + col)}.`;
+          doc.setFont("helvetica", "bold");
+          doc.text(answerLetter, margin + 20 + (col * (contentWidth / 2)), y);
+          doc.setFont("helvetica", "normal");
+          y = addWrappedText(answer.text, margin + 40 + (col * (contentWidth / 2)), y, contentWidth / 2 - 60);
           
+          if (answer.code) {
+            y += 8;
+            y = addCodeBlock(answer.code, margin + 40 + (col * (contentWidth / 2)), y, contentWidth / 2 - 60);
+          }
+          
+          if (answer.equation) {
+            y += 8;
+            try {
+              const equationData = await renderLatexToImage(answer.equation);
+              if (equationData.dataUrl) {
+                // Scale down if wider than available answer width
+                let imgWidth = equationData.width;
+                let imgHeight = equationData.height;
+                const maxWidth = contentWidth / 2 - 60; // Account for answer indentation
+                
+                if (imgWidth > maxWidth) {
+                  const scale = maxWidth / imgWidth;
+                  imgWidth = maxWidth;
+                  imgHeight = equationData.height * scale;
+                }
+                
+                doc.addImage(equationData.dataUrl, 'PNG', margin + 50 + (col * (contentWidth / 2)), y, imgWidth, imgHeight);
+                y += imgHeight + 16;
+              }
+            } catch (error) {
+              console.error('Error rendering answer equation:', error);
+              y = addWrappedText(answer.equation, margin + 50 + (col * (contentWidth / 2)), y, contentWidth / 2 - 80);
+              y += 16;
+            }
+          }
+        }
+      }
       y += 16;
     }
     
