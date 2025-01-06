@@ -315,7 +315,7 @@ export default function TestGenerator() {
     }
     
     // Height for answers
-    const answersHeight = await question.answers.reduce(async (heightPromise: any, answer: any) => {
+    const answersHeight = await question.answers.reduce(async (heightPromise: Promise<number>, answer: { text: string; code?: string; equation?: string }) => {
       const height = await heightPromise;
       const answerLines = getWrappedText(answer.text, contentWidth - 60);
       let answerHeight = answerLines.length * lineHeight;
