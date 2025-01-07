@@ -41,10 +41,7 @@ export function EquationEditor({
   onSave,
 }: EquationEditorProps) {
 
-  
-  
   const [equation, setEquation] = useState(new StringWrapper(initialValue));
-  
   const [preview, setPreview] = useState('');
   const [error, setError] = useState('');
   const [one, setOne] = useState('');
@@ -73,7 +70,7 @@ export function EquationEditor({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Equation Editor</DialogTitle>
