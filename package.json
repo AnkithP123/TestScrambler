@@ -1,12 +1,16 @@
 {
-  "name": "my-app",
+  "name": "test-scrambler",
   "version": "0.1.0",
   "private": true,
+  "main": "main.js",
   "scripts": {
     "dev": "next dev",
+    "start2": "electron .",
+    "build2": "electron-builder",
+    "lint": "next lint",
+    "export": "next export",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
     "@curriculumassociates/canvas-latex": "github:CurriculumAssociates/canvas-latex",
@@ -25,6 +29,7 @@
     "html-to-docx": "^1.8.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.2",
+    "http-server": "^14.1.1",
     "jspdf": "^2.5.2",
     "katex": "^0.16.18",
     "lucide-react": "^0.469.0",
@@ -43,10 +48,26 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
     "eslint": "^8",
     "eslint-config-next": "14.2.16",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "build": {
+    "appId": "me.ankith.testscrambler",
+    "productName": "Test Scrambler",
+    "files": [
+      "out/*",
+      "out/**/*",
+      "out/**/**/*",
+      "out/**/**/**/*",
+      "main.js"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities"
+    }
   }
 }
