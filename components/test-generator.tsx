@@ -17,6 +17,8 @@ import html2pdf from 'html2pdf.js';
 import html2canvas from 'html2canvas';
 import fs from 'fs';
 import HTMLtoDOCX from 'html-to-docx'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 
 
 import { Canvg } from 'canvg'
@@ -42,13 +44,13 @@ export default function TestGenerator() {
   const [savedQuestionsOpen, setSavedQuestionsOpen] = useState(false)
   const printFrameRef = useRef<HTMLIFrameElement>(null)
 
-  if (!initialized) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  // if (!initialized) {
+  //   return (
+  //     <div className="flex h-screen items-center justify-center">
+  //       <Loader2 className="h-8 w-8 animate-spin" />
+  //     </div>
+  //   );
+  // }
 
   if (!questions) {
     console.error('Questions array is undefined');
@@ -172,7 +174,6 @@ export default function TestGenerator() {
       }
     };
     
-          
     const generatePDF = async (version: TestVersion, vIndex: number) => {
       const letter = String.fromCharCode(65 + vIndex);
       const doc = new jsPDF({
@@ -180,7 +181,7 @@ export default function TestGenerator() {
         format: 'letter',
         orientation: 'portrait'
       });
-  
+
       // Set up fonts
       doc.setFont("helvetica");
       
@@ -197,18 +198,18 @@ export default function TestGenerator() {
         doc.setFont("helvetica");
         return margin;
       };
-  
+
       // Helper function to check if content will fit on current page
       const willContentFit = (currentY: number, contentHeight: number) => {
         return (currentY + contentHeight) < (pageHeight - margin);
       };
-  
+
       // Helper function to wrap text
       const getWrappedText = (text: string, maxWidth: number): string[] => {
         const words = text.split(' ');
         const lines: string[] = [];
         let currentLine = '';
-  
+
         words.forEach(word => {
           const width = doc.getTextWidth(currentLine + ' ' + word);
           if (width < maxWidth) {
@@ -223,7 +224,7 @@ export default function TestGenerator() {
         }
         return lines;
       };
-  
+
       // Helper function to add text with line breaks
       const addWrappedText = (text: string, x: number, y: number, maxWidth: number): number => {
         const lines = getWrappedText(text, maxWidth);
@@ -232,7 +233,7 @@ export default function TestGenerator() {
         });
         return y + (lines.length * lineHeight);
       };
-  
+
       // Helper function to add code block
       const addCodeBlock = (code: string, x: number, y: number, width: number): number => {
         const padding = 8; // Reduced padding
@@ -260,14 +261,13 @@ export default function TestGenerator() {
         return y + totalHeight + 4; // Reduced bottom spacing
       };
       
-        
       // Start with the header
       let y = margin;
-  
+
       // Add version letter (top right)
       doc.setFontSize(48);
       doc.text(letter, pageWidth - margin - doc.getTextWidth(letter), y + 24);
-  
+
       // Add title and form fields
       doc.setFontSize(24);
       doc.text("Final Exam", margin, y + 24);
@@ -282,197 +282,201 @@ export default function TestGenerator() {
       // doc.text("Student ID: ________________", pageWidth - margin - 150, y);
       
       y += 48;
-  // Process each question
-  for (let qIndex = 0; qIndex < version.questions.length; qIndex++) {
-    const question = version.questions[qIndex];
-    const questionNumber = `${qIndex + 1}.`;
-    
-    // Calculate total height needed for this question
-    let questionHeight = lineHeight;
-    const questionTextLines = getWrappedText(question.text, contentWidth - 40);
-    questionHeight += questionTextLines.length * lineHeight;
-    
-    if (question.code) {
-      const codeLines = question.code.split('\n').length;
-      questionHeight += (codeLines * 14) + 32; // Code height + padding
-    }
-    
-    if (question.equation) {
-      questionHeight += 80; // Estimated height for equation
-    }
-    
-    // Height for answers
-    const answersHeight = await question.answers.reduce(async (heightPromise: Promise<number>, answer: { text: string; code?: string; equation?: string }) => {
-      const height = await heightPromise;
-      const answerLines = getWrappedText(answer.text, contentWidth - 60);
-      let answerHeight = answerLines.length * lineHeight;
-      if (answer.code) {
-    const codeLines = answer.code.split('\n').length;
-    answerHeight += (codeLines * 14) + 32;
-      }
-      if (answer.equation) answerHeight += 80;
-      return height + answerHeight + 16;
-    }, Promise.resolve(0));
-    
-    questionHeight += answersHeight;
-    questionHeight += 40;
-  
-    // Check if we need a new page
-    if (!willContentFit(y, questionHeight)) {
-      y = addNewPage();
-    }
-  
-    // Question number and text
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text(questionNumber, margin, y);
-    doc.setFont("helvetica", "normal");
-    y = addWrappedText(question.text, margin + 20, y, contentWidth - 40);
-    
-    // Code block
-    if (question.code) {
-      y += 8;
-      y = addCodeBlock(question.code, margin, y, contentWidth);
-    }
-    
-    // Equation
-    if (question.equation) {
-      y += 8;
-      try {
-    const equationData = await renderLatexToImage(question.equation);
-    if (equationData.dataUrl) {
-      // Scale down if wider than content width
-      let imgWidth = equationData.width;
-      let imgHeight = equationData.height;
-
-      console.log('LATEX:', question.equation);
-      console.log('Equation data:', equationData);
-      
-      if (imgWidth > contentWidth) {
-        const scale = contentWidth / imgWidth;
-        imgWidth = contentWidth;
-        imgHeight = equationData.height * scale;
-      }
-      
-      doc.addImage(equationData.dataUrl, 'PNG', margin + 10, y, imgWidth, imgHeight);
-      y += imgHeight + 24; // Added extra spacing after equation
-    }
-      } catch (error) {
-    console.error('Error rendering equation:', error);
-    y = addWrappedText(question.equation, margin + 10, y, contentWidth - 20);
-    y += 24; // Added extra spacing after equation
-      }
-    }
+      // Process each question
+      for (let qIndex = 0; qIndex < version.questions.length; qIndex++) {
+        const question = version.questions[qIndex];
+        const questionNumber = `${qIndex + 1}.`;
         
-    
-    // Answers
-    y += 8;
-    const answersWithCodeOrEquation = question.answers.some(answer => answer.code || answer.equation);
-    const answersWithExtraLongAnswer = question.answers.some(answer => doc.getTextWidth(answer.text) > (contentWidth - 60) / 2);
-
-    if (question.text.startsWith("Hello")) {
-      console.log('Question:', question);
-      console.log('Answers with code or equation:', answersWithCodeOrEquation);
-      console.log('Answers with extra long answer:', answersWithExtraLongAnswer);
-      for (const [aIndex, answer] of question.answers.entries()) {
-        console.log('Answer:', answer);
-        const answerLetter = `${String.fromCharCode(65 + aIndex)}.`;
-        console.log('Length:', doc.getTextWidth(answer.text));
-        console.log('Column width:', (contentWidth - 60) / 2);
-      }
-    }
-    if (answersWithCodeOrEquation || answersWithExtraLongAnswer) {
-      for (const [aIndex, answer] of question.answers.entries()) {
-        const answerLetter = `${String.fromCharCode(65 + aIndex)}.`;
-        doc.setFont("helvetica", "bold");
-        doc.text(answerLetter, margin + 20, y);
-        doc.setFont("helvetica", "normal");
-        y = addWrappedText(answer.text, margin + 40, y, contentWidth - 60);
+        // Calculate total height needed for this question
+        let questionHeight = lineHeight;
+        const questionTextLines = getWrappedText(question.text, contentWidth - 40);
+        questionHeight += questionTextLines.length * lineHeight;
         
-        if (answer.code) {
-          y += 8;
-          y = addCodeBlock(answer.code, margin + 40, y, contentWidth - 60);
+        if (question.code) {
+          const codeLines = question.code.split('\n').length;
+          questionHeight += (codeLines * 14) + 32; // Code height + padding
         }
         
-        if (answer.equation) {
+        if (question.equation) {
+          questionHeight += 80; // Estimated height for equation
+        }
+        
+        // Height for answers
+        const answersHeight = await question.answers.reduce(async (heightPromise: Promise<number>, answer: { text: string; code?: string; equation?: string }) => {
+          const height = await heightPromise;
+          const answerLines = getWrappedText(answer.text, contentWidth - 60);
+          let answerHeight = answerLines.length * lineHeight;
+          if (answer.code) {
+            const codeLines = answer.code.split('\n').length;
+            answerHeight += (codeLines * 14) + 32;
+          }
+          if (answer.equation) answerHeight += 80;
+          return height + answerHeight + 16;
+        }, Promise.resolve(0));
+        
+        questionHeight += answersHeight;
+        questionHeight += 40;
+
+        // Check if we need a new page
+        if (!willContentFit(y, questionHeight)) {
+          y = addNewPage();
+        }
+
+        // Question number and text
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(questionNumber, margin, y);
+        doc.setFont("helvetica", "normal");
+        y = addWrappedText(question.text, margin + 20, y, contentWidth - 40);
+        
+        // Code block
+        if (question.code) {
+          y += 8;
+          y = addCodeBlock(question.code, margin, y, contentWidth);
+        }
+        
+        // Equation
+        if (question.equation) {
           y += 8;
           try {
-            const equationData = await renderLatexToImage(answer.equation);
+            const equationData = await renderLatexToImage(question.equation);
             if (equationData.dataUrl) {
-              // Scale down if wider than available answer width
+              // Scale down if wider than content width
               let imgWidth = equationData.width;
               let imgHeight = equationData.height;
-              const maxWidth = contentWidth - 60; // Account for answer indentation
+
+              console.log('LATEX:', question.equation);
+              console.log('Equation data:', equationData);
               
-              if (imgWidth > maxWidth) {
-                const scale = maxWidth / imgWidth;
-                imgWidth = maxWidth;
+              if (imgWidth > contentWidth) {
+                const scale = contentWidth / imgWidth;
+                imgWidth = contentWidth;
                 imgHeight = equationData.height * scale;
               }
               
-              doc.addImage(equationData.dataUrl, 'PNG', margin + 50, y, imgWidth, imgHeight);
-              y += imgHeight + 16;
+              doc.addImage(equationData.dataUrl, 'PNG', margin + 10, y, imgWidth, imgHeight);
+              y += imgHeight + 24; // Added extra spacing after equation
             }
           } catch (error) {
-            console.error('Error rendering answer equation:', error);
-            y = addWrappedText(answer.equation, margin + 50, y, contentWidth - 80);
-            y += 16;
+            console.error('Error rendering equation:', error);
+            y = addWrappedText(question.equation, margin + 10, y, contentWidth - 20);
+            y += 24; // Added extra spacing after equation
           }
         }
-            
-        y += 16;
-      }
-    } else {
-      const columnWidth = (contentWidth - 60) / 2;
-      let colY = y;
-      for (let aIndex = 0; aIndex < question.answers.length; aIndex += 2) {
-        const answer1 = question.answers[aIndex];
-        const answer2 = question.answers[aIndex + 1];
         
-        const answerLetter1 = `${String.fromCharCode(65 + aIndex)}.`;
-        const answerLetter2 = answer2 ? `${String.fromCharCode(65 + aIndex + 1)}.` : '';
+        // Answers
+        y += 8;
+        const answersWithCodeOrEquation = question.answers.some(answer => answer.code || answer.equation);
+        const answersWithExtraLongAnswer = question.answers.some(answer => doc.getTextWidth(answer.text) > (contentWidth - 60) / 2);
 
-        const colX1 = margin + 20;
-        const colX2 = margin + 20 + columnWidth + 20;
-
-        doc.setFont("helvetica", "bold");
-        doc.text(answerLetter1, colX1, colY);
-        doc.setFont("helvetica", "normal");
-        const answer1Height = addWrappedText(answer1.text, colX1 + 20, colY, columnWidth - 20);
-
-        if (answer2) {
-          doc.setFont("helvetica", "bold");
-          doc.text(answerLetter2, colX2, colY);
-          doc.setFont("helvetica", "normal");
-          const answer2Height = addWrappedText(answer2.text, colX2 + 20, colY, columnWidth - 20);
-          colY = Math.max(answer1Height, answer2Height);
-        } else {
-          colY = answer1Height;
+        if (question.text.startsWith("Hello")) {
+          console.log('Question:', question);
+          console.log('Answers with code or equation:', answersWithCodeOrEquation);
+          console.log('Answers with extra long answer:', answersWithExtraLongAnswer);
+          for (const [aIndex, answer] of question.answers.entries()) {
+            console.log('Answer:', answer);
+            const answerLetter = `${String.fromCharCode(65 + aIndex)}.`;
+            console.log('Length:', doc.getTextWidth(answer.text));
+            console.log('Column width:', (contentWidth - 60) / 2);
+          }
         }
-        colY += lineHeight;
+        if (answersWithCodeOrEquation || answersWithExtraLongAnswer) {
+          for (const [aIndex, answer] of question.answers.entries()) {
+            const answerLetter = `${String.fromCharCode(65 + aIndex)}.`;
+            doc.setFont("helvetica", "bold");
+            doc.text(answerLetter, margin + 20, y);
+            doc.setFont("helvetica", "normal");
+            y = addWrappedText(answer.text, margin + 40, y, contentWidth - 60);
+            
+            if (answer.code) {
+              y += 8;
+              y = addCodeBlock(answer.code, margin + 40, y, contentWidth - 60);
+            }
+            
+            if (answer.equation) {
+              y += 8;
+              try {
+                const equationData = await renderLatexToImage(answer.equation);
+                if (equationData.dataUrl) {
+                  // Scale down if wider than available answer width
+                  let imgWidth = equationData.width;
+                  let imgHeight = equationData.height;
+                  const maxWidth = contentWidth - 60; // Account for answer indentation
+                  
+                  if (imgWidth > maxWidth) {
+                    const scale = maxWidth / imgWidth;
+                    imgWidth = maxWidth;
+                    imgHeight = equationData.height * scale;
+                  }
+                  
+                  doc.addImage(equationData.dataUrl, 'PNG', margin + 50, y, imgWidth, imgHeight);
+                  y += imgHeight + 16;
+                }
+              } catch (error) {
+                console.error('Error rendering answer equation:', error);
+                y = addWrappedText(answer.equation, margin + 50, y, contentWidth - 80);
+                y += 16;
+              }
+            }
+                
+            y += 16;
+          }
+        } else {
+          const columnWidth = (contentWidth - 60) / 2;
+          let colY = y;
+          for (let aIndex = 0; aIndex < question.answers.length; aIndex += 2) {
+            const answer1 = question.answers[aIndex];
+            const answer2 = question.answers[aIndex + 1];
+            
+            const answerLetter1 = `${String.fromCharCode(65 + aIndex)}.`;
+            const answerLetter2 = answer2 ? `${String.fromCharCode(65 + aIndex + 1)}.` : '';
+
+            const colX1 = margin + 20;
+            const colX2 = margin + 20 + columnWidth + 20;
+
+            doc.setFont("helvetica", "bold");
+            doc.text(answerLetter1, colX1, colY);
+            doc.setFont("helvetica", "normal");
+            const answer1Height = addWrappedText(answer1.text, colX1 + 20, colY, columnWidth - 20);
+
+            if (answer2) {
+              doc.setFont("helvetica", "bold");
+              doc.text(answerLetter2, colX2, colY);
+              doc.setFont("helvetica", "normal");
+              const answer2Height = addWrappedText(answer2.text, colX2 + 20, colY, columnWidth - 20);
+              colY = Math.max(answer1Height, answer2Height);
+            } else {
+              colY = answer1Height;
+            }
+            colY += lineHeight;
+          }
+          y = colY + 16;
+        }
+        
+        y += 24;
       }
-      y = colY + 16;
-    }
-    
-    y += 24;
-  }
-  
-  // Save the PDF
-  doc.save(`Test_Version_${letter}.pdf`);
+
+      // Return the PDF as a Blob
+      return doc.output('blob');
     };
-  
-    // Generate a PDF for each version
+
+    // Generate a PDF for each version and add to zip
+    const zip = new JSZip();
     for (let i = 0; i < versions.length; i++) {
-  await generatePDF(versions[i], i);
+      const pdfBlob = await generatePDF(versions[i], i);
+      const letter = String.fromCharCode(65 + i);
+      zip.file(`Test_Version_${letter}.pdf`, pdfBlob);
     }
+
+    // Generate the zip file and trigger download
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    saveAs(zipBlob, 'Test_Versions.zip');
 
     const style = document.querySelector('style');
     if (style) {
       document.head.removeChild(style);
     }
-
   };
-  
     // Function to render LaTeX to an image
   const renderLatexToImage = (latex: string): Promise<{ dataUrl: string, width: number, height: number }> => {
     return new Promise((resolve, reject) => {
