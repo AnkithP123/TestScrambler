@@ -70,7 +70,7 @@ export function EquationEditor({
 
   const onOpenChange2 = () => {
     console.log('HI');
-    let element = document.getElementsByClassName('rounded-sm')[0];
+    const element = document.getElementsByClassName('rounded-sm')[0];
     element.addEventListener('click', () => {
       console.log('clicked');
       onOpenChange(false);
