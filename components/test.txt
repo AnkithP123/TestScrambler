@@ -1,20 +1,218 @@
-const katex = require('katex');
 
-// Function to render LaTeX and save as SVG
-export default async function latexToSvg(latexString, outputPath) {
-    // Render LaTeX string to HTML
-    const latexHtml = katex.renderToString(latexString, {
-        throwOnError: false,
-        displayMode: true,
-    });
+1. What is the capital of France?
+A. Berlin
+*B. Paris
+C. Madrid
+D. Rome
 
-    // Create SVG data URL
-    const svgDataUrl = `data:image/svg+xml;base64,${Buffer.from(latexHtml).toString('base64')}`;
+2. Which programming language is known as the language of the web?
+*A. JavaScript
+B. Python
+C. C++
+D. Java
 
-    // Extract SVG content from data URL
-    const svgContent = Buffer.from(svgDataUrl.split(',')[1], 'base64').toString('utf-8');
-
-    // Save the SVG content to a file
-    return svgContent;
+3. Write a function that returns the sum of two numbers.
+*A.
+```
+function sum(a, b) {
+    return a + b;
 }
+```
+B. 
+```
+function add(x, y) {
+    return x - y;
+}
+```
+C. Use console.log instead
+D. Both are wrong
 
+4. What is the formula for the area of a circle?
+$$
+A = \pi r^2
+$$
+
+A. Diameter multiplied by pi  
+B. Circumference divided by 2  
+*C. pi multiplied by the square of the radius  
+D. Radius multiplied by circumference  
+
+5. What is the correct syntax for a Java main method?
+*A.
+```
+public static void main(String[] args) {
+    // Code here
+}
+```
+B. 
+```
+static public main void(String[] args) {
+    // Code here
+}
+```
+C. 
+```
+public void static main(String args[]) {
+    // Code here
+}
+```
+D. All of the above
+
+6. Write a Java function that checks if a number is even.
+*A.
+```
+public boolean isEven(int num) {
+    return num % 2 == 0;
+}
+```
+B. 
+```
+public boolean isEven(int n) {
+    return n % 2 == 1;
+}
+```
+C. 
+```
+function checkEven(num) {
+    return num % 2 == 0;
+}
+```
+D. None of the above
+
+7. What is the value of \(5 / 2\) in Java (integer division)?
+A. 2.5  
+B. 3  
+*C. 2  
+D. 2.0  
+
+8. Write a JavaScript function to calculate the factorial of a number.
+*A.
+```
+function factorial(n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+```
+B. 
+```
+function factorial(n) {
+    return n + factorial(n - 1);
+}
+```
+C. Use loops instead of recursion  
+D. None of the above  
+
+9. What is the purpose of the `static` keyword in Java?  
+A. To define a constant  
+*B. The method or variable belongs to the class, not an instance  
+C. To override a method  
+D. To declare a variable  
+
+10. What does JVM stand for?  
+*A. Java Virtual Machine  
+B. Java Verified Module  
+C. Java Version Manager  
+D. Java Variable Method  
+
+11. What does the following code do?
+```
+System.out.println("Hello, World!");
+```
+
+A. It prints nothing  
+B. It throws a compilation error  
+*C. It prints `Hello, World!` to the console  
+D. It opens a dialog box with "Hello, World!"  
+
+12. Write a function in JavaScript that returns the square of a number.
+*A.
+```
+function square(num) {
+    return num * num;
+}
+```
+B. 
+```
+function square(num) {
+    return num ** 3;
+}
+```
+C. Use Math.sqrt() instead  
+D. None of the above  
+
+13. Which loop guarantees at least one iteration?  
+A. `for`  
+B. `while`  
+*C. `do-while`  
+D. None of the above  
+
+14. What is polymorphism in Java?  
+A. The ability to encapsulate data  
+B. The ability to extend classes  
+*C. The ability to define multiple methods with the same name  
+D. None of the above  
+
+15. Write the correct formula for the perimeter of a rectangle.  
+$$
+P = 2(l + w)
+$$
+
+A. \(2lw\)  
+B. \(l + w + l + w\)  
+*C. \(2(l + w)\)  
+D. None of the above  
+
+16. What is the default value of a boolean in Java?  
+A. `true`  
+B. `1`  
+*C. `false`  
+D. `null`  
+
+17. What does the `this` keyword in Java refer to?  
+*A. The current object  
+B. A new object  
+C. A parent object  
+D. None of the above  
+
+18. Write a Java method to calculate the sum of an array.
+*A.
+```
+public int sumArray(int[] arr) {
+    int sum = 0;
+    for (int num : arr) {
+        sum += num;
+    }
+    return sum;
+}
+```
+B. 
+```
+public int arraySum(int[] arr) {
+    int sum = arr[0];
+    return sum;
+}
+```
+C. Both are correct  
+D. None of the above  
+
+19. What is the correct way to define a class in Java?  
+*A.
+```
+public class MyClass {
+    // Class content
+}
+```
+B. 
+```
+define class MyClass {
+    // Class content
+}
+```
+C. Use `var` instead  
+D. None of the above  
+
+20. What is the parent class of all classes in Java?  
+A. String  
+B. Main  
+*C. Object  
+D. None of the above  

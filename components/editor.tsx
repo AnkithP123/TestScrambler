@@ -8,6 +8,14 @@ const Editor: React.FC<{ equation: StringWrapper, set: (value: string) => void }
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+
+        // Remove all existing MathfieldElements from the document
+        //
+
+        if (mathFieldRef.current) {
+            return;
+        }
+
         // Create the MathfieldElement
         const mathField = new MathfieldElement();
 
@@ -25,6 +33,8 @@ const Editor: React.FC<{ equation: StringWrapper, set: (value: string) => void }
             containerRef.current.appendChild(mathField);
         }
 
+
+
         // Save reference for future use
         mathFieldRef.current = mathField;
 
@@ -34,12 +44,13 @@ const Editor: React.FC<{ equation: StringWrapper, set: (value: string) => void }
                 containerRef.current.removeChild(mathField);
             }
             mathFieldRef.current = null;
+            containerRef.current = document.createElement('div');
         };
     }, [equation, set]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px' }}>
-            <div ref={containerRef} style={{ border: '1px solid #ccc', padding: '10px', borderRadius: '5px' }}></div>
+            <div ref={containerRef} style={{ border: '1px solid #ccc', padding: '10px', borderRadius: '5px', display: 'flex', flexDirection: 'column' }}></div>
         </div>
     );
 };

@@ -50,7 +50,7 @@ export function TestMenu({
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onExportMarkdown}>
           <FileText className="mr-2 h-4 w-4" />
-          Export as Markdown
+          Export as Text
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onCopyToClipboard}>
           <Copy className="mr-2 h-4 w-4" />

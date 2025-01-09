@@ -104,18 +104,6 @@ export default function TestGenerator() {
           output: 'html'
         });
         container.innerHTML = html;
-
-        // download the html as an html file
-        const htmlString = container.innerHTML;
-        const blob = new Blob([htmlString], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-
-        // download html
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'latex.html';
-        document.body.appendChild(a);
-        a.click();
         
         const katexElement = container.firstChild as HTMLElement;
         const canvas = await html2canvas(katexElement, {
@@ -524,42 +512,90 @@ export default function TestGenerator() {
     });
   };
   
-  const handleExportMarkdown = () => {
-    const markdown = versions.map((version, vIndex) => {
-      return `# Test Version ${vIndex + 1}\n\n` +
+  const handleExportText = () => {
+    const text = versions.map((version, vIndex) => {
+      return `Test Version ${vIndex + 1}\n\n` +
         version.questions.map((q, qIndex) => {
-          return `${qIndex + 1}. ${q.text}\n` +
-            (q.code ? `\`\`\`\n${q.code}\n\`\`\`\n` : '') +
-            q.answers.map((a, aIndex) => 
-              `${String.fromCharCode(65 + aIndex)}. ${a.text}`
-            ).join('\n') + '\n'
-        }).join('\n')
-    }).join('\n---\n\n')
+          const questionText = `${qIndex + 1}. ${q.text}\n` +
+            (q.code ? `\n${q.code}\n` : '') +
+            (q.equation ? `\n${q.equation}\n` : '');
 
-    const blob = new Blob([markdown], { type: 'text/markdown' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'test-versions.md'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+          const answersWithCodeOrEquation = q.answers.some(answer => answer.code || answer.equation);
+          const answersWithExtraLongAnswer = q.answers.some(answer => answer.text.length > 50);
+
+          let answersText = '';
+          if (answersWithCodeOrEquation || answersWithExtraLongAnswer) {
+            answersText = '\n' + q.answers.map((a, aIndex) => {
+              return `\t${String.fromCharCode(65 + aIndex)}. ${a.text}\n` +
+                (a.code ? `\n${a.code}\n` : '') +
+                (a.equation ? `\n${a.equation}\n` : '');
+            }).join('\n');
+          } else {
+            const columnWidth = Math.ceil(q.answers.length / 2);
+            for (let i = 0; i < columnWidth; i++) {
+              const answer1 = q.answers[i];
+              const answer2 = q.answers[i + columnWidth];
+              answersText += `\n\t${String.fromCharCode(65 + i)}. ${answer1.text}  `;
+              if (answer2) {
+                answersText += `${String.fromCharCode(65 + i + columnWidth)}. ${answer2.text}\n`;
+              } else {
+                answersText += '\n';
+              }
+            }
+          }
+
+          return questionText + answersText;
+        }).join('\n');
+    }).join('\n---\n\n');
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'test-versions.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   const handleCopyToClipboard = () => {
     const text = versions.map((version, vIndex) => {
       return `Test Version ${vIndex + 1}\n\n` +
         version.questions.map((q, qIndex) => {
-          return `${qIndex + 1}. ${q.text}\n` +
-            (q.code ? `${q.code}\n` : '') +
-            q.answers.map((a, aIndex) => 
-              `${String.fromCharCode(65 + aIndex)}. ${a.text}`
-            ).join('\n')
-        }).join('\n\n')
-    }).join('\n\n---\n\n')
+          const questionText = `${qIndex + 1}. ${q.text}\n` +
+            (q.code ? `\`\`\`\n${q.code}\n\`\`\`\n` : '') +
+            (q.equation ? `$$${q.equation}$$\n` : '');
 
-    navigator.clipboard.writeText(text)
+          const answersWithCodeOrEquation = q.answers.some(answer => answer.code || answer.equation);
+          const answersWithExtraLongAnswer = q.answers.some(answer => answer.text.length > 50);
+
+          let answersText = '';
+          if (answersWithCodeOrEquation || answersWithExtraLongAnswer) {
+            answersText = q.answers.map((a, aIndex) => {
+              return `${String.fromCharCode(65 + aIndex)}. ${a.text}\n` +
+                (a.code ? `\`\`\`\n${a.code}\n\`\`\`\n` : '') +
+                (a.equation ? `$$${a.equation}$$\n` : '');
+            }).join('\n');
+          } else {
+            const columnWidth = Math.ceil(q.answers.length / 2);
+            for (let i = 0; i < columnWidth; i++) {
+              const answer1 = q.answers[i];
+              const answer2 = q.answers[i + columnWidth];
+              answersText += `${String.fromCharCode(65 + i)}. ${answer1.text}  `;
+              if (answer2) {
+                answersText += `${String.fromCharCode(65 + i + columnWidth)}. ${answer2.text}\n`;
+              } else {
+                answersText += '\n';
+              }
+            }
+          }
+
+          return questionText + answersText;
+        }).join('\n')
+    }).join('\n---\n\n');
+
+    navigator.clipboard.writeText(text);
   }
   
   return (
@@ -569,7 +605,7 @@ export default function TestGenerator() {
         <TestMenu
           onPrint={handlePrint}
           onExportPDF={handleExportPDF}
-          onExportMarkdown={handleExportMarkdown}
+          onExportMarkdown={handleExportText}
           onCopyToClipboard={handleCopyToClipboard}
           onScrambleOptions={() => setScrambleDialogOpen(true)}
           onViewSaved={() => setSavedQuestionsOpen(true)}
@@ -684,19 +720,181 @@ export default function TestGenerator() {
                 ))}
               </div>
 
-              <div className="flex justify-center gap-4">
+                <div className="flex justify-center gap-4">
                 <Button onClick={() => {
-                    setEditingQuestion({} as Question)
-                    setAddingQuestion(true)
-                  }}>
-                  Add Question
+                  setEditingQuestion({} as Question)
+                  setAddingQuestion(true)
+                }}>
+                Add Question
                 </Button>
-                {questions.length > 0 && (
-                  <Button variant="outline" onClick={clearAllData}>
-                    Clear All
-                  </Button>
-                )}
-              </div>
+                <Button variant="outline" onClick={clearAllData}>
+                Clear All
+                </Button>
+                <Button variant="outline" onClick={() => document.getElementById('fileInput')?.click()}>
+                Import Questions
+                </Button>
+                <input
+                type="file"
+                id="fileInput"
+                accept=".txt"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                      const text = await file.text();
+                      const parseQuestionsFromText = (text: string): Question[] => {
+                          const lines = text.split('\n').filter(line => line.trim() !== '');
+                          const questions: Question[] = [];
+                          let currentQuestion: Question | null = null;
+                          let currentAnswers: { text: string; code?: string; equation?: string; isCorrect: boolean }[] = [];
+                          let insideCodeBlock = false;
+                          let insideEquationBlock = false;
+                          let isQuestionCodeBlock = false;
+                          let isQuestionEquationBlock = false;
+              
+                          const saveCurrentQuestion = () => {
+                              if (currentQuestion) {
+                                  currentQuestion.answers = currentAnswers.map(answer => ({
+                                      ...answer,
+                                      id: Math.random().toString(36).substr(2, 9)
+                                  }));
+                                  questions.push(currentQuestion);
+                              }
+                          };
+              
+                          lines.forEach(line => {
+                              const trimmedLine = line.trim();
+              
+                              if (insideCodeBlock) {
+                                  if (trimmedLine.startsWith('```')) {
+                                      insideCodeBlock = false;
+                                  } else {
+                                      if (isQuestionCodeBlock && currentQuestion) {
+                                          currentQuestion.code += '\n' + line;
+                                      } else if (currentAnswers.length > 0) {
+                                          currentAnswers[currentAnswers.length - 1].code += '\n' + line;
+                                      }
+                                  }
+                                  return;
+                              }
+              
+                              if (insideEquationBlock) {
+                                  if (trimmedLine.startsWith('$$')) {
+                                      insideEquationBlock = false;
+                                  } else {
+                                      if (isQuestionEquationBlock && currentQuestion) {
+                                          currentQuestion.equation += '\n' + trimmedLine;
+                                      } else if (currentAnswers.length > 0) {
+                                          currentAnswers[currentAnswers.length - 1].equation += '\n' + trimmedLine;
+                                      }
+                                  }
+                                  return;
+                              }
+              
+                              if (/^\d+\./.test(trimmedLine) || !currentQuestion) {
+                                  saveCurrentQuestion();
+                                  currentQuestion = {
+                                      id: Math.random().toString(36).substr(2, 9),
+                                      text: trimmedLine.replace(/^\d+\.\s*/, ''),
+                                      answers: []
+                                  };
+                                  currentAnswers = [];
+                                  isQuestionCodeBlock = false;
+                                  isQuestionEquationBlock = false;
+                              } else if (/^\*?[A-Z]\./.test(trimmedLine)) {
+                                  const isCorrect = trimmedLine.startsWith('*');
+                                  const answerText = trimmedLine.replace(/^\*?[A-Z]\.\s*/, '');
+                                  currentAnswers.push({
+                                      text: answerText,
+                                      isCorrect
+                                  });
+                              } else if (trimmedLine.startsWith('```')) {
+                                  insideCodeBlock = true;
+                                  if (currentAnswers.length > 0) {
+                                      currentAnswers[currentAnswers.length - 1].code = '';
+                                  } else if (currentQuestion) {
+                                      currentQuestion.code = '';
+                                      isQuestionCodeBlock = true;
+                                  }
+                              } else if (trimmedLine.startsWith('$$')) {
+                                  insideEquationBlock = true;
+                                  if (currentAnswers.length > 0) {
+                                      currentAnswers[currentAnswers.length - 1].equation = '';
+                                  } else if (currentQuestion) {
+                                      currentQuestion.equation = '';
+                                      isQuestionEquationBlock = true;
+                                  }
+                              } else {
+                                  if (currentAnswers.length > 0) {
+                                      currentAnswers[currentAnswers.length - 1].text += ' ' + trimmedLine;
+                                  } else if (currentQuestion) {
+                                      currentQuestion.text += ' ' + trimmedLine;
+                                  }
+                              }
+                          });
+              
+                          saveCurrentQuestion();
+              
+                          return questions;
+                      };
+              
+                      const importedQuestions = parseQuestionsFromText(text);
+                      const dialog = document.createElement('div');
+                      dialog.style.position = 'fixed';
+                      dialog.style.top = '50%';
+                      dialog.style.left = '50%';
+                      dialog.style.transform = 'translate(-50%, -50%)';
+                      dialog.style.backgroundColor = 'white';
+                      dialog.style.padding = '20px';
+                      dialog.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+                      dialog.style.zIndex = '1000';
+              
+                      const message = document.createElement('p');
+                      message.textContent = 'Would you like to replace the existing questions or add the new ones?';
+                      dialog.appendChild(message);
+              
+                      const buttonContainer = document.createElement('div');
+                      buttonContainer.style.display = 'flex';
+                      buttonContainer.style.justifyContent = 'space-between';
+                      buttonContainer.style.marginTop = '20px';
+              
+                      const replaceButton = document.createElement('button');
+                      replaceButton.textContent = 'Replace';
+                      replaceButton.style.marginRight = '10px';
+                      replaceButton.onclick = () => {
+                          clearAllData();
+                          importedQuestions.forEach(addQuestion);
+                          document.body.removeChild(dialog);
+                      };
+              
+                      const addButton = document.createElement('button');
+                      addButton.textContent = 'Add';
+                      addButton.style.marginRight = '10px';
+                      addButton.onclick = () => {
+                          importedQuestions.forEach(addQuestion);
+                          document.body.removeChild(dialog);
+                      };
+              
+                      const cancelButton = document.createElement('button');
+                      cancelButton.textContent = 'Cancel';
+                      cancelButton.onclick = () => {
+                          return document.body.removeChild(dialog);
+                      };
+                  
+              
+                  buttonContainer.appendChild(replaceButton);
+                  buttonContainer.appendChild(addButton);
+                  buttonContainer.appendChild(cancelButton);
+                  dialog.appendChild(buttonContainer);
+
+                  document.body.appendChild(dialog);
+                  }
+                }}
+                />
+                </div>
+
+
+              
             </TabsContent>
             <TabsContent value="versions" className="space-y-8">
               {versions.length > 0 ? (

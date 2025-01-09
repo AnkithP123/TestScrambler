@@ -52,21 +52,14 @@ export function ScrambleDialog({
         <div className="grid gap-4 py-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="versions">Number of Versions</Label>
-            <Select
+            <input
+              type="number"
+              id="versions"
               value={numVersions}
-              onValueChange={setNumVersions}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Select versions" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <SelectItem key={num} value={num.toString()}>
-                    {num} version{num > 1 ? 's' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(e) => setNumVersions(e.target.value)}
+              className="w-32 border rounded px-2 py-1"
+              min="1"
+            />
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="scramble-questions">Scramble Questions</Label>

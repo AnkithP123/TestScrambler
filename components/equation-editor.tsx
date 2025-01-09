@@ -33,7 +33,6 @@ export class StringWrapper {
   }
 }
 
-
 export function EquationEditor({
   open,
   onOpenChange,
@@ -69,8 +68,18 @@ export function EquationEditor({
     equation.setValue(value);
   }
 
+  const onOpenChange2 = () => {
+    console.log('HI');
+    let element = document.getElementsByClassName('rounded-sm')[0];
+    element.addEventListener('click', () => {
+      console.log('clicked');
+      onOpenChange(false);
+    });
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+      <Dialog open={open} onOpenChange={onOpenChange2}>
+
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Equation Editor</DialogTitle>
@@ -122,6 +131,6 @@ export function EquationEditor({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+      </Dialog>
   );
 }
